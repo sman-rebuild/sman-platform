@@ -1,0 +1,106 @@
+rules_version = '2';
+// Rebuild rules. No Cloud Functions (needs paid plan), so pricing, stock and
+// state transitions are enforced here. Product keys are fixed: see PRODUCTS.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function staff() { return get(/databases/$(database)/documents/staff/$(request.auth.uid)).data; }
+    function hasStaff() { return signedIn() && exists(/databases/$(database)/documents/staff/$(request.auth.uid)); }
+    function isAdmin() { return hasStaff() && staff().role == 'admin' && staff().active == true; }
+    function isCourier() { return hasStaff() && staff().role == 'courier' && staff().active == true; }
+
+    match /staff/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // prices doc: {super, special, superspecial, eggs, jumbo: number, zones: {zoneName: fee}}
+    match /catalog/prices { allow read: if true; allow write: if isAdmin(); }
+
+    // stock doc: {super, special, superspecial, eggs, jumbo: int, lastOrderId}
+    // A customer may only decrement stock in the same batch that creates the order.
+    match /catalog/stock {
+      allow read: if true;
+      allow write: if isAdmin();
+      allow update: if stockDecrementMatchesOrder();
+    }
+
+    function q(o, k) { return o.items.get(k, 0); }
+    function prices() { return get(/databases/$(database)/documents/catalog/prices).data; }
+    function stockBefore() { return get(/databases/$(database)/documents/catalog/stock).data; }
+    function stockDiffOk(o) {
+      let b = resource.data; let a = request.resource.data;
+      return a.super == b.super - q(o,'super') && a.special == b.special - q(o,'special')
+        && a.superspecial == b.superspecial - q(o,'superspecial') && a.eggs == b.eggs - q(o,'eggs') && a.jumbo == b.jumbo - q(o,'jumbo')
+        && a.super >= 0 && a.special >= 0 && a.superspecial >= 0 && a.eggs >= 0 && a.jumbo >= 0;
+    }
+    function stockDecrementMatchesOrder() {
+      let id = request.resource.data.lastOrderId;
+      return id is string
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['super','special','superspecial','eggs','jumbo','lastOrderId'])
+        && !exists(/databases/$(database)/documents/orders/$(id))
+        && existsAfter(/databases/$(database)/documents/orders/$(id))
+        && stockDiffOk(getAfter(/databases/$(database)/documents/orders/$(id)).data);
+    }
+
+    function validNewOrder(o) {
+      return o.keys().hasOnly(['name','phone','address','items','subtotal','deliveryFee','total','status','createdAtMs','zone','notes','trackingToken'])
+        && o.keys().hasAll(['name','phone','address','items','subtotal','deliveryFee','total','status','createdAtMs','zone','trackingToken'])
+        && o.status == 'new'
+        && o.name is string && o.name.size() > 0 && o.name.size() < 120
+        && o.phone is string && o.phone.size() >= 8 && o.phone.size() < 20
+        && o.address is string && o.address.size() < 300
+        && o.get('notes','') is string && o.get('notes','').size() < 300
+        && o.trackingToken is string && o.trackingToken.size() >= 20 && o.trackingToken.size() <= 64
+        && o.items is map && o.items.keys().hasOnly(['super','special','superspecial','eggs','jumbo'])
+        && q(o,'super') is int && q(o,'special') is int && q(o,'superspecial') is int && q(o,'eggs') is int && q(o,'jumbo') is int
+        && q(o,'super') >= 0 && q(o,'special') >= 0 && q(o,'superspecial') >= 0 && q(o,'eggs') >= 0 && q(o,'jumbo') >= 0
+        && q(o,'super') + q(o,'special') + q(o,'superspecial') + q(o,'eggs') + q(o,'jumbo') > 0
+        && q(o,'super') + q(o,'special') + q(o,'superspecial') + q(o,'eggs') + q(o,'jumbo') <= 50
+        && o.zone is string && prices().zones.keys().hasAny([o.zone])
+        && o.deliveryFee == prices().zones[o.zone]
+        && o.subtotal == q(o,'super')*prices().super + q(o,'special')*prices().special + q(o,'superspecial')*prices().superspecial
+                         + q(o,'eggs')*prices().eggs + q(o,'jumbo')*prices().jumbo
+        && o.total == o.subtotal + o.deliveryFee
+        && o.createdAtMs is int
+        // stock must be decremented by exactly this order in the same batch
+        && getAfter(/databases/$(database)/documents/catalog/stock).data.lastOrderId == request.resource.id;
+    }
+
+    match /orders/{orderId} {
+      allow create: if validNewOrder(request.resource.data);
+      // No public read: customers use the sanitized tracking doc.
+      allow get: if isAdmin() || (isCourier() && resource.data.get('courierUid','') == request.auth.uid);
+      allow list: if isAdmin() || (isCourier() && resource.data.get('courierUid','') == request.auth.uid);
+      allow delete: if false;
+      allow update: if isAdmin()
+        || (isCourier() && resource.data.get('courierUid','') == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status','completedAt','completedAtMs','handoffReported','handoffReportedAt'])
+            && (
+              (resource.data.status == 'dispatched' && request.resource.data.status in ['completed','no_answer'])
+              || (resource.data.status == 'no_answer' && request.resource.data.status in ['completed','dispatched'])
+              // courier only REPORTS handing cash over; the admin confirms (isSupplied / isReconciled are admin-only)
+              || (resource.data.status == 'completed' && request.resource.data.status == 'completed'
+                  && resource.data.get('handoffReported', false) == false && request.resource.data.handoffReported == true)
+            ));
+    }
+
+    // Sanitized tracking record, readable only by someone holding the secret token (doc id). No name/phone/address.
+    match /tracking/{token} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if request.resource.data.keys().hasOnly(['orderId','status','updatedAtMs'])
+        && request.resource.data.status == 'new'
+        && getAfter(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.trackingToken == token
+        && !exists(/databases/$(database)/documents/orders/$(request.resource.data.orderId));
+      allow update: if (isAdmin() || (isCourier()
+            && getAfter(/databases/$(database)/documents/orders/$(resource.data.orderId)).data.courierUid == request.auth.uid))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAtMs'])
+        && request.resource.data.status == getAfter(/databases/$(database)/documents/orders/$(resource.data.orderId)).data.status;
+      allow delete: if false;
+    }
+
+    match /{document=**} { allow read, write: if false; }
+  }
+}

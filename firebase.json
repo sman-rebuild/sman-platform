@@ -1,0 +1,3 @@
+{"firestore":{"rules":"firestore.rules"},
+ "hosting":{"public":"apps","ignore":["**/*.test.js"]},
+ "emulators":{"firestore":{"host":"127.0.0.1","port":8181},"auth":{"host":"127.0.0.1","port":9199},"hosting":{"host":"127.0.0.1","port":5050},"ui":{"enabled":false}}}
