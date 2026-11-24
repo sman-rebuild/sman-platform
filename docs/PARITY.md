@@ -48,18 +48,18 @@ Original size: index.html 973 lines, js/app.js 4437, js/admin.js 1119, driver.ht
 | Feature | Original | Status |
 |---|---|---|
 | Admin login | PIN dialog (verifyAdminPin, client-side) | DONE, replaced by real email login (intentional security change) |
-| Orders list, status updates, notes | renderOrdersList, updateOrderStatus, addOrderNote | PARTIAL (list, assign courier, cancel; no notes, no search/filter, no edit) |
+| Orders list, status updates, notes | renderOrdersList, updateOrderStatus, addOrderNote | PARTIAL (list, search, status filter, internal note, assign courier, cancel; no order edit) |
 | Cancel restores stock | updateOrderStatus | DONE (also restores batch capacity) |
 | Customers list with history | - | DONE (basic) |
 | Cash reconciliation of couriers | - | DONE |
 | Courier accounts | renderAdminDrivers (PIN stored readable) | DONE (real accounts, 6+ char password) |
 | Product management (add, delete, reorder, images) | renderAdminProducts, moveProduct | NOT PORTED (prices and stock only) |
-| Zones editor | renderAdminZones | NOT PORTED |
+| Zones editor | renderAdminZones | DONE (add, edit, remove zones with fees; tested) |
 | Promo codes editor | renderAdminPromos | NOT PORTED |
 | Batches | - | PARTIAL (create, open/close, show/hide, archive) |
 | Gallery tab, texts, UI settings | renderGalleryTabUI, applyUITexts | NOT PORTED |
 | Stats and top products | renderTopProductsStats | NOT PORTED |
-| Export orders CSV | exportOrdersToCSV | NOT PORTED |
+| Export orders CSV | exportOrdersToCSV | DONE (UTF-8 with BOM, formula-safe; export builds a file in the e2e test, content columns not compared to the original) |
 | Message customer / rating request via WhatsApp | sendMessageToCustomer, sendRatingRequest | NOT PORTED |
 | Dispatch several orders to a courier, bulk WhatsApp links | sendDispatchToDriver, generateBulkWhatsAppLinks | NOT PORTED (single order assign only) |
 | Delete all orders / reset stats | deleteAllOrders, resetStatsOnly | NOT PORTED (deletion is blocked by rules on purpose) |

@@ -19,10 +19,11 @@ button.gray{background:#64748b}.row{display:flex;gap:8px;align-items:center;flex
  <button id="go">دخول</button><p id="lerr" class="err"></p></section>
 <section id="app" class="hidden">
  <div class="tabs" id="tabs"><button data-t="orders" class="on">الطلبات</button><button data-t="cash">تأكيد النقدية</button><button data-t="customers">العملاء</button><button data-t="batches">الدفعات</button><button data-t="couriers">المناديب</button><button data-t="catalog">الأسعار والمخزون</button></div>
+ <div id="ofilter" class="card"><input id="osearch" placeholder="بحث بالاسم أو الموبايل أو العنوان"><select id="ostatus"><option value="active">النشطة</option><option value="all">الكل</option><option value="completed">المكتملة</option><option value="canceled">الملغاة</option></select><button id="ocsv" class="gray">تصدير CSV</button></div>
  <div id="orders"></div><div id="cash" class="hidden"></div><div id="customers" class="hidden"><input id="csearch" placeholder="بحث بالاسم أو الموبايل" style="margin-bottom:8px"><div id="cuslist"></div></div>
  <div id="couriers" class="hidden"><div class="card"><b>إضافة مندوب</b><input id="cname" placeholder="الاسم"><input id="cphone" dir="ltr" placeholder="رقم الموبايل"><input id="cpass" dir="ltr" placeholder="كلمة سر (6 على الأقل)"><button id="cadd">إنشاء الحساب</button><p id="cerr" class="err"></p></div><div id="clist"></div></div>
  <div id="batches" class="hidden"><div class="card"><b>دفعة جديدة</b><input id="bname" placeholder="اسم الدفعة"><input id="bceil" type="number" min="1" placeholder="الحد الأقصى (عدد الجوز)"><label>بداية التوصيل</label><input id="bstart" type="date"><label>نهاية التوصيل</label><input id="bend" type="date"><button id="badd">إضافة</button><p id="berr" class="err"></p></div><div id="blist"></div></div>
- <div id="catalog" class="hidden"><div class="card"><b>الأسعار</b><div id="pbox"></div><b>المخزون</b><div id="sbox"></div><button id="csave">حفظ</button></div></div>
+ <div id="catalog" class="hidden"><div class="card"><b>الأسعار</b><div id="pbox"></div><b>المخزون</b><div id="sbox"></div><b>مناطق التوصيل</b><div id="zbox"></div><button id="zadd" class="gray">إضافة منطقة</button><button id="csave">حفظ</button></div></div>
 </section></main>
 <script src="../shared/vendor/firebase-app-compat.js"></script>
 <script src="../shared/vendor/firebase-auth-compat.js"></script>

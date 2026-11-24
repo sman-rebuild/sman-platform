@@ -1,6 +1,6 @@
 const pp = require('puppeteer-core');
 const PROJ='demo-sman-rebuild', FS='http://127.0.0.1:8181', AU='http://127.0.0.1:9199', H='http://127.0.0.1:5050';
-const sleep=ms=>new Promise(r=>setTimeout(r,ms)); let pass=0,fail=0; const ok=(n,c)=>{c?pass++:fail++;console.log((c?'PASS ':'FAIL ')+n)};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms)); let pass=0,fail=0,pp_notePrompt=false; const ok=(n,c)=>{c?pass++:fail++;console.log((c?'PASS ':'FAIL ')+n)};
 const conv=v=>typeof v==='string'?{stringValue:v}:typeof v==='boolean'?{booleanValue:v}:typeof v==='object'?{mapValue:{fields:Object.fromEntries(Object.entries(v).map(([k,x])=>[k,conv(x)]))}}:{integerValue:String(v)};
 const put=async(p,f)=>{const r=await fetch(`${FS}/v1/projects/${PROJ}/databases/(default)/documents/${p}`,{method:'PATCH',headers:{'content-type':'application/json',Authorization:'Bearer owner'},body:JSON.stringify({fields:Object.fromEntries(Object.entries(f).map(([k,v])=>[k,conv(v)]))})});if(!r.ok)throw new Error(await r.text())};
 const raw=async p=>(await (await fetch(`${FS}/v1/projects/${PROJ}/databases/(default)/documents/${p}`,{headers:{Authorization:'Bearer owner'}})).json());
@@ -16,7 +16,7 @@ const num=f=>+f.integerValue;
  const b=await pp.launch({executablePath:'/usr/bin/google-chrome',headless:'new',args:['--no-sandbox','--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1']});
  const ext=[]; const mk=async(w,h)=>{const ctx=await b.createBrowserContext();const p=await ctx.newPage();await p.setViewport({width:w,height:h});
   p.on('request',r=>{const u=r.url();if(!/^(data|blob|about):/.test(u)&&new URL(u).hostname!=='127.0.0.1')ext.push(u)});
-  p.on('console',m=>{if(/act failed|update failed|load failed/.test(m.text()))console.log('CONS',m.text())});p.on('pageerror',e=>console.log('PAGEERR',e.message.slice(0,150)));p.on('dialog',async d=>{if(d.type()==='prompt'){await d.accept('العميل لا يرد على التليفون');return;}console.log('DIALOG',d.message());await d.accept()});return p};
+  p.on('console',m=>{if(/act failed|update failed|load failed/.test(m.text()))console.log('CONS',m.text())});p.on('pageerror',e=>console.log('PAGEERR',e.message.slice(0,150)));p.on('dialog',async d=>{if(d.type()==='prompt'){await d.accept(pp_notePrompt?'ملاحظة اختبار داخلية':'العميل لا يرد على التليفون');return;}console.log('DIALOG',d.message());await d.accept()});return p};
  // 1. store
  const s=await mk(390,800); await s.goto(H+'/store/index.html',{waitUntil:'networkidle2'}); await sleep(1500);
  await s.click('[data-add=super]'); await s.click('[data-inc=super]'); await s.click('[data-add=eggs]'); await s.evaluate(()=>document.getElementById('cart-open').click()); await sleep(400); await s.type('#name','عميل تجريبي'); await s.type('#phone','01011112222'); await s.type('#address','شارع تجريبي'); await sleep(300);
@@ -88,6 +88,20 @@ const num=f=>+f.integerValue;
  ok('CRM batches tab shows booked 2 of 5', (await c.$eval('#blist',e=>e.innerText)).includes('محجوز 2 من 5'));
  await c.type('#bname','دفعة جديدة'); await c.type('#bceil','7'); await c.click('#badd'); await sleep(2000);
  ok('admin created a batch from the CRM', (await list('batches')).length===2);
+ // admin tools: search, internal note, CSV, zones editor
+ await c.evaluate(()=>document.querySelector('[data-t=orders]').click()); await sleep(500);
+ await c.evaluate(()=>{document.getElementById('ostatus').value='all';document.getElementById('ostatus').dispatchEvent(new Event('change'))}); await sleep(400);
+ ok('status filter "all" shows canceled order too', (await c.$$eval('#orders .card',e=>e.length))>=2);
+ await c.type('#osearch','لا يوجد اسم كذا'); await sleep(400); ok('search with no match shows empty message', (await c.$eval('#orders',e=>e.innerText)).includes('لا توجد طلبات'));
+ await c.evaluate(()=>{const i=document.getElementById('osearch');i.value='01011112222';i.dispatchEvent(new Event('input'))}); await sleep(400); ok('search by phone finds orders', (await c.$$eval('#orders .card',e=>e.length))>=2);
+ pp_notePrompt=true; await c.evaluate(()=>{[...document.querySelectorAll('#orders button')].find(b=>b.textContent==='ملاحظة داخلية').click()}); await sleep(2000);
+ ok('internal admin note saved', (await list('orders')).some(o=>o.fields.adminNote&&o.fields.adminNote.stringValue.length>0));
+ await c.evaluate(()=>{window.__csv=null;const o=URL.createObjectURL;URL.createObjectURL=b=>{window.__csv=b;return o.call(URL,b)}; document.getElementById('ocsv').click()}); await sleep(600);
+ ok('CSV export builds a file with a header and rows', await c.evaluate(async()=>{const t=await window.__csv.text();return t.includes('الموبايل')&&t.split('\n').length>=3}));
+ await c.evaluate(()=>document.querySelector('[data-t=catalog]').click()); await sleep(1200);
+ await c.click('#zadd'); await c.evaluate(()=>{const rows=document.querySelectorAll('#zbox .zrow');const r=rows[rows.length-1];const n=r.querySelector('.zn'),f=r.querySelector('.zf');n.value='منطقة جديدة';f.value='40'}); await c.evaluate(()=>document.getElementById('csave').click()); await sleep(4000);
+ const zf=(await raw('catalog/prices')).fields.zones.mapValue.fields; console.log('ZF',Object.keys(zf).join('|')); ok('zones editor saved a new zone with fee 40 and kept old zones', num(zf['منطقة جديدة'])===40 && num(zf['ههيا'])===15);
+ ok('prices untouched by zones save', num((await raw('catalog/prices')).fields.super)===110);
  await c.evaluate(()=>document.querySelector('[data-t=customers]').click()); await sleep(800);
  const ct=await c.$eval('#cuslist',e=>e.innerText); ok('customer history groups both orders by phone', ct.includes('الطلبات: 2'));
  await c.screenshot({path:'/downloads/rebuild-crm-customers.png'});
