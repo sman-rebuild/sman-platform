@@ -136,6 +136,12 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Internal admin notes: never readable by couriers or customers.
+    match /orderNotes/{orderId} {
+      allow read, delete: if isAdmin();
+      allow create, update: if isAdmin() && request.resource.data.keys().hasOnly(['text','updatedAtMs']) && request.resource.data.text is string && request.resource.data.text.size() <= 300;
+    }
+
     match /{document=**} { allow read, write: if false; }
   }
 }

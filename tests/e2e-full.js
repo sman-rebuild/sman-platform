@@ -95,7 +95,7 @@ const num=f=>+f.integerValue;
  await c.type('#osearch','لا يوجد اسم كذا'); await sleep(400); ok('search with no match shows empty message', (await c.$eval('#orders',e=>e.innerText)).includes('لا توجد طلبات'));
  await c.evaluate(()=>{const i=document.getElementById('osearch');i.value='01011112222';i.dispatchEvent(new Event('input'))}); await sleep(400); ok('search by phone finds orders', (await c.$$eval('#orders .card',e=>e.length))>=2);
  pp_notePrompt=true; await c.evaluate(()=>{[...document.querySelectorAll('#orders button')].find(b=>b.textContent==='ملاحظة داخلية').click()}); await sleep(2000);
- ok('internal admin note saved', (await list('orders')).some(o=>o.fields.adminNote&&o.fields.adminNote.stringValue.length>0));
+ ok('internal admin note saved in the admin-only document', (await list('orderNotes')).some(d=>d.fields.text&&d.fields.text.stringValue.length>0) && !(await list('orders')).some(o=>o.fields.adminNote));
  await c.evaluate(()=>{window.__csv=null;const o=URL.createObjectURL;URL.createObjectURL=b=>{window.__csv=b;return o.call(URL,b)}; document.getElementById('ocsv').click()}); await sleep(600);
  ok('CSV export builds a file with a header and rows', await c.evaluate(async()=>{const t=await window.__csv.text();return t.includes('الموبايل')&&t.split('\n').length>=3}));
  await c.evaluate(()=>document.querySelector('[data-t=catalog]').click()); await sleep(1200);

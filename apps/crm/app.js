@@ -2,7 +2,7 @@
 const $ = id => document.getElementById(id);
 const el = (t, txt, cls) => { const e = document.createElement(t); if (txt != null) e.textContent = txt; if (cls) e.className = cls; return e; };
 const PRODUCTS = { super: 'سوبر', special: 'سبيشيال', superspecial: 'سوبر سبيشيال', eggs: 'بيض', jumbo: 'جامبو' };
-let orders = [], couriers = [], batches = [], unsubs = [], tab = 'orders';
+let orders = [], couriers = [], batches = [], notes = {}, unsubs = [], tab = 'orders';
 
 $('go').onclick = async () => { $('lerr').textContent = ''; try { await auth.signInWithEmailAndPassword($('email').value, $('pass').value); } catch (e) { $('lerr').textContent = 'بيانات الدخول غير صحيحة'; } };
 $('out').onclick = () => auth.signOut();
@@ -17,6 +17,7 @@ auth.onAuthStateChanged(async u => {
   const s = await db.collection('staff').doc(u.uid).get();
   if (!s.exists || s.data().role !== 'admin' || s.data().active !== true) { await auth.signOut(); $('lerr').textContent = 'هذا الحساب ليس مسؤولاً'; return; }
   unsubs.push(db.collection('orders').onSnapshot(sn => { orders = sn.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0)); renderOrders(); renderCash(); renderCustomers(); }));
+  unsubs.push(db.collection('orderNotes').onSnapshot(sn => { notes = {}; sn.docs.forEach(d => (notes[d.id] = d.data().text || '')); renderOrders(); }));
   unsubs.push(db.collection('batches').onSnapshot(sn => { batches = sn.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.deliveryStart || 0) - (a.deliveryStart || 0)); renderBatches(); }));
   unsubs.push(db.collection('staff').where('role', '==', 'courier').onSnapshot(sn => { couriers = sn.docs.map(d => ({ uid: d.id, ...d.data() })); renderCouriers(); renderOrders(); }));
 });
@@ -32,14 +33,14 @@ function renderOrders() {
   const box = $('orders'); box.replaceChildren();
   const q = ($('osearch').value || '').trim().toLowerCase(), sf = $('ostatus').value;
   orders.filter(o => (sf === 'all' ? true : sf === 'completed' ? o.status === 'completed' : sf === 'canceled' ? o.status === 'canceled' : !(o.status === 'completed' && o.isSupplied) && o.status !== 'canceled'))
-    .filter(o => !q || [o.name, o.phone, o.address, o.adminNote].some(v => String(v || '').toLowerCase().includes(q))).forEach(o => {
+    .filter(o => !q || [o.name, o.phone, o.address, notes[o.id]].some(v => String(v || '').toLowerCase().includes(q))).forEach(o => {
     const c = el('div', null, 'card');
     c.append(el('b', (o.name || '') + ' - ' + (o.phone || '')), el('span', STATUS[o.status] || o.status, 'tag'), el('div', o.address || ''));
     c.append(el('div', Object.entries(o.items || {}).map(([k, v]) => (PRODUCTS[k] || k) + ' x' + v).join('، ') + ' | الإجمالي ' + o.total + ' ج'));
     if (o.problemNote) { const pr = el('div', null, 'row'); const pt = el('b', 'مشكلة من المندوب: ' + o.problemNote); pt.style.color = '#b45309'; pr.append(pt); c.append(pr); }
     if (o.notes) c.append(el('div', 'ملاحظات العميل: ' + o.notes));
-    if (o.adminNote) c.append(el('div', 'ملاحظة داخلية: ' + o.adminNote));
-    if (o.status !== 'canceled') { const nb = el('button', 'ملاحظة داخلية', 'gray'); nb.onclick = () => { const t = prompt('الملاحظة الداخلية (لا يراها العميل)', o.adminNote || ''); if (t !== null) setStatus(o, { adminNote: t.slice(0, 300) }); }; c.append(nb); }
+    if (notes[o.id]) c.append(el('div', 'ملاحظة داخلية: ' + notes[o.id]));
+    if (o.status !== 'canceled') { const nb = el('button', 'ملاحظة داخلية', 'gray'); nb.onclick = () => { const t = prompt('الملاحظة الداخلية (للإدارة فقط)', notes[o.id] || ''); if (t !== null) db.collection('orderNotes').doc(o.id).set({ text: t.slice(0, 300), updatedAtMs: Date.now() }).catch(() => alert('تعذر الحفظ')); }; c.append(nb); }
     if (['new', 'dispatched', 'no_answer'].includes(o.status)) { const cb = el('button', 'إلغاء الطلب وإرجاع المخزون', 'gray'); cb.onclick = () => cancelOrder(o); c.append(cb); }
     if (o.status === 'new' || o.status === 'no_answer') {
       const r = el('div', null, 'row'), sel = el('select');
