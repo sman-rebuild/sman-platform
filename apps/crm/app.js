@@ -8,7 +8,7 @@ $('go').onclick = async () => { $('lerr').textContent = ''; try { await auth.sig
 $('out').onclick = () => auth.signOut();
 $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => {
   tab = b.dataset.t; $('tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-  ['orders', 'cash', 'customers', 'batches', 'couriers', 'catalog'].forEach(t => $(t).classList.toggle('hidden', t !== tab)); if (tab === 'catalog') loadCatalog();
+  ['orders', 'cash', 'customers', 'batches', 'couriers', 'catalog'].forEach(t => $(t).classList.toggle('hidden', t !== tab)); if (tab === 'catalog') { loadCatalog(); loadPromos(); }
 });
 auth.onAuthStateChanged(async u => {
   unsubs.forEach(f => f()); unsubs = [];
@@ -161,3 +161,19 @@ function zoneRow(name, fee) {
 }
 function renderZones(zones) { const b = $('zbox'); b.replaceChildren(); Object.entries(zones).forEach(([n, f]) => b.append(zoneRow(n, f))); }
 $('zadd').onclick = () => $('zbox').append(zoneRow('', 0));
+
+// Promo codes (doc id = code, percent 1-90). The rules recompute the discount on every order, so a wrong discount is refused.
+async function loadPromos() {
+  const b = $('plist'); b.replaceChildren();
+  let sn; try { sn = await db.collection('promos').get(); } catch (e) { b.append(el('div', 'تعذر تحميل الأكواد')); return; }
+  sn.docs.forEach(d => { const v = d.data(), r = el('div', null, 'row'); r.append(el('b', d.id), el('span', v.percent + '%'), el('span', v.active ? 'فعّال' : 'موقوف', 'tag'));
+    const t = el('button', v.active ? 'إيقاف' : 'تفعيل', 'gray'); t.onclick = async () => { await db.collection('promos').doc(d.id).update({ active: !v.active }).catch(() => alert('تعذر التحديث')); loadPromos(); };
+    const x = el('button', 'حذف', 'gray'); x.onclick = async () => { if (confirm('حذف الكود ' + d.id + '؟')) { await db.collection('promos').doc(d.id).delete().catch(() => alert('تعذر الحذف')); loadPromos(); } };
+    r.append(t, x); b.append(r); });
+  if (!sn.docs.length) b.append(el('div', 'لا توجد أكواد'));
+}
+$('padd').onclick = async () => {
+  $('perr').textContent = ''; const code = $('pcode').value.trim().toUpperCase(), pct = parseInt($('ppct').value, 10);
+  if (!/^[A-Z0-9]{3,20}$/.test(code) || !(pct >= 1 && pct <= 90)) { $('perr').textContent = 'الكود 3 إلى 20 حرفاً إنجليزياً أو رقماً، والنسبة من 1 إلى 90'; return; }
+  try { await db.collection('promos').doc(code).set({ percent: pct, active: true }); $('pcode').value = $('ppct').value = ''; loadPromos(); } catch (e) { $('perr').textContent = 'تعذر الإضافة'; }
+};

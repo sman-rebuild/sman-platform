@@ -1,7 +1,7 @@
 const $ = id => document.getElementById(id);
 const P = window.PRODUCTS, KEYS = Object.keys(P);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-let prices = null, stock = null, filter = 'all', batches = [];
+let prices = null, stock = null, filter = 'all', batches = [], promo = null;
 const pairsOf = items => ['super', 'special', 'superspecial', 'jumbo'].reduce((a, k) => a + (items[k] || 0), 0);
 const room = b => Math.max(0, Number(b.ceilingPairs) - Number(b.bookedPairs || 0));
 const fmtD = ms => ms ? new Date(ms).toLocaleDateString('ar-EG') : '';
@@ -19,8 +19,8 @@ function setQty(k, n) {
 function totals() {
   if (!prices) return { sub: 0, fee: 0, tot: 0, count: 0 };
   const sub = KEYS.reduce((s, k) => s + qty(k) * prices[k], 0), z = $('zone').value, fee = (prices.zones && prices.zones[z]) || 0;
-  const count = KEYS.reduce((s, k) => s + qty(k), 0);
-  return { sub, fee, tot: count ? sub + fee : 0, count };
+  const count = KEYS.reduce((s, k) => s + qty(k), 0), disc = promo ? Math.floor(sub * promo.percent / 100) : 0;
+  return { sub, fee, disc, tot: count ? sub - disc + fee : 0, count };
 }
 function renderGrid() {
   const g = $('grid'); g.replaceChildren();
@@ -51,7 +51,7 @@ function renderCart() {
   renderBatch();
   const t = totals(); $('cart-count').textContent = t.count; $('bar-total').textContent = t.sub;
   $('cart-bar').classList.toggle('translate-y-full', !t.count);
-  $('sub').textContent = t.sub; $('fee').textContent = t.fee; $('tot').textContent = t.tot;
+  $('disc-row').classList.toggle('hidden', !t.disc); $('disc').textContent = t.disc; $('sub').textContent = t.sub; $('fee').textContent = t.fee; $('tot').textContent = t.tot;
   const l = $('lines'); l.replaceChildren();
   KEYS.filter(k => qty(k)).forEach(k => { const r = document.createElement('div'); r.className = 'bg-white rounded-2xl p-2.5 border border-slate-200 flex items-center gap-3';
     r.innerHTML = `<img src="${esc(P[k].img)}" alt="" class="w-12 h-12 rounded-xl object-cover"><div class="flex-1 min-w-0"><div class="font-black text-sm truncate">${esc(P[k].name)}</div><div class="text-[11px] font-bold text-slate-500">${Number(prices[k])} ج × ${qty(k)}</div></div>
@@ -67,6 +67,15 @@ document.addEventListener('click', e => {
 });
 const openSheet = () => { $('overlay').classList.remove('hidden'); $('sheet').classList.remove('hidden'); };
 function closeSheet() { $('overlay').classList.add('hidden'); $('sheet').classList.add('hidden'); }
+$('promo-apply').onclick = async () => {
+  const code = $('promo').value.trim().toUpperCase(), m = $('promo-msg'); promo = null;
+  if (!/^[A-Z0-9]{3,20}$/.test(code)) { m.textContent = 'كود غير صحيح'; m.className = 'text-[11px] font-black text-red-700'; return renderCart(); }
+  try { const d = await db.collection('promos').doc(code).get(), v = d.exists ? d.data() : null;
+    if (v && v.active === true) { promo = { code, percent: v.percent }; m.textContent = 'تم تطبيق خصم ' + v.percent + '%'; m.className = 'text-[11px] font-black text-emerald-700'; }
+    else { m.textContent = 'الكود غير صالح'; m.className = 'text-[11px] font-black text-red-700'; }
+  } catch (e) { m.textContent = 'تعذر التحقق من الكود'; m.className = 'text-[11px] font-black text-red-700'; }
+  renderCart();
+};
 $('cart-open').onclick = openSheet; $('overlay').onclick = closeSheet; $('sheet-close').onclick = closeSheet; $('zone').onchange = renderCart;
 $('track-open').onclick = () => { const t = localStorage.getItem('sman_last_track'); if (t) location.href = 'track.html?t=' + encodeURIComponent(t); else toast('لا يوجد طلب سابق على هذا الجهاز'); };
 
@@ -99,7 +108,10 @@ $('order').onclick = async () => {
       const cur = (await tx.get(sref)).data(), p = (await tx.get(db.collection('catalog').doc('prices'))).data();
       for (const k in items) if (cur[k] < items[k]) throw new Error('OOS:' + P[k].name);
       const z = $('zone').value, sub = Object.keys(items).reduce((s, k) => s + items[k] * p[k], 0), fee = p.zones[z];
-      const order = { name: $('name').value.trim(), phone: $('phone').value.trim(), address: $('address').value.trim(), items, subtotal: sub, deliveryFee: fee, total: sub + fee, status: 'new', createdAtMs: Date.now(), zone: z, trackingToken: tok };
+      let disc = 0, pcode = null;
+      if (promo) { const pd = await tx.get(db.collection('promos').doc(promo.code)); if (!pd.exists || pd.data().active !== true) throw new Error('PROMO'); pcode = promo.code; disc = Math.floor(sub * pd.data().percent / 100); }
+      const order = { name: $('name').value.trim(), phone: $('phone').value.trim(), address: $('address').value.trim(), items, subtotal: sub, deliveryFee: fee, total: sub - disc + fee, status: 'new', createdAtMs: Date.now(), zone: z, trackingToken: tok };
+      if (pcode && disc > 0) { order.promoCode = pcode; order.discount = disc; }
       if ($('notes').value.trim()) order.notes = $('notes').value.trim();
       let bref = null;
       if (need) { bref = db.collection('batches').doc(bid); const b = (await tx.get(bref)).data(); if (!b || !b.isOpen || !b.isVisible || b.isArchived || Number(b.bookedPairs || 0) + need > Number(b.ceilingPairs)) throw new Error('FULL'); order.batchId = bid; order._b = Number(b.bookedPairs || 0) + need; }
@@ -110,5 +122,5 @@ $('order').onclick = async () => {
     });
     localStorage.setItem('sman_last_track', tok); cart = {}; save();
     location.href = 'track.html?t=' + tok;
-  } catch (e) { $('err').textContent = String(e.message).startsWith('OOS:') ? 'نفد: ' + e.message.slice(4) : e.message === 'FULL' ? 'الدفعة المختارة امتلأت، اختر دفعة أخرى' : 'تعذر إرسال الطلب، حاول مرة أخرى'; $('order').disabled = false; }
+  } catch (e) { $('err').textContent = String(e.message).startsWith('OOS:') ? 'نفد: ' + e.message.slice(4) : e.message === 'PROMO' ? 'كود الخصم لم يعد صالحاً، احذفه وحاول مرة أخرى' : e.message === 'FULL' ? 'الدفعة المختارة امتلأت، اختر دفعة أخرى' : 'تعذر إرسال الطلب، حاول مرة أخرى'; $('order').disabled = false; }
 };

@@ -15,7 +15,7 @@ Original size: index.html 973 lines, js/app.js 4437, js/admin.js 1119, driver.ht
 | Weighted birds (pick by weight) and pre-book holds | buildWeightProductCard, startWeightHoldsLiveListener | NOT PORTED |
 | Chicks product track | getProductTrackType | NOT PORTED |
 | Per-batch stock and booked per product | getPureAvailableStock | NOT PORTED |
-| Promo codes | promoCodes in settings, applied in cart | NOT PORTED |
+| Promo codes | promoCodes in settings, applied in cart | PARTIAL (percent codes, validated by the rules, admin editor; no usage limits, no minimum order, no loyalty-issued codes; original code types not compared yet) |
 | Loyalty points, rewards, gift promo after order | showOrderSuccessModal rewardHtml | NOT PORTED |
 | Returning customer banner, wallet lookup by phone, saved profile | initReturningCustomerWelcome, checkCustomerWalletSafe | NOT PORTED (cart only) |
 | Reorder last order | getCachedLastOrderItems | NOT PORTED |
@@ -48,14 +48,14 @@ Original size: index.html 973 lines, js/app.js 4437, js/admin.js 1119, driver.ht
 | Feature | Original | Status |
 |---|---|---|
 | Admin login | PIN dialog (verifyAdminPin, client-side) | DONE, replaced by real email login (intentional security change) |
-| Orders list, status updates, notes | renderOrdersList, updateOrderStatus, addOrderNote | PARTIAL (list, search, status filter, internal note, assign courier, cancel; no order edit) |
+| Orders list, status updates, notes | renderOrdersList, updateOrderStatus, addOrderNote | PARTIAL (list, search, status filter, internal note kept in an admin-only collection, assign courier, cancel; no order edit) |
 | Cancel restores stock | updateOrderStatus | DONE (also restores batch capacity) |
 | Customers list with history | - | DONE (basic) |
 | Cash reconciliation of couriers | - | DONE |
 | Courier accounts | renderAdminDrivers (PIN stored readable) | DONE (real accounts, 6+ char password) |
 | Product management (add, delete, reorder, images) | renderAdminProducts, moveProduct | NOT PORTED (prices and stock only) |
 | Zones editor | renderAdminZones | DONE (add, edit, remove zones with fees; tested) |
-| Promo codes editor | renderAdminPromos | NOT PORTED |
+| Promo codes editor | renderAdminPromos | PARTIAL (create, activate/deactivate, delete) |
 | Batches | - | PARTIAL (create, open/close, show/hide, archive) |
 | Gallery tab, texts, UI settings | renderGalleryTabUI, applyUITexts | NOT PORTED |
 | Stats and top products | renderTopProductsStats | NOT PORTED |
