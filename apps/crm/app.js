@@ -2,13 +2,13 @@
 const $ = id => document.getElementById(id);
 const el = (t, txt, cls) => { const e = document.createElement(t); if (txt != null) e.textContent = txt; if (cls) e.className = cls; return e; };
 const PRODUCTS = { super: 'سوبر', special: 'سبيشيال', superspecial: 'سوبر سبيشيال', eggs: 'بيض', jumbo: 'جامبو' };
-let orders = [], couriers = [], unsubs = [], tab = 'orders';
+let orders = [], couriers = [], batches = [], unsubs = [], tab = 'orders';
 
 $('go').onclick = async () => { $('lerr').textContent = ''; try { await auth.signInWithEmailAndPassword($('email').value, $('pass').value); } catch (e) { $('lerr').textContent = 'بيانات الدخول غير صحيحة'; } };
 $('out').onclick = () => auth.signOut();
 $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => {
   tab = b.dataset.t; $('tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-  ['orders', 'cash', 'customers', 'couriers', 'catalog'].forEach(t => $(t).classList.toggle('hidden', t !== tab)); if (tab === 'catalog') loadCatalog();
+  ['orders', 'cash', 'customers', 'batches', 'couriers', 'catalog'].forEach(t => $(t).classList.toggle('hidden', t !== tab)); if (tab === 'catalog') loadCatalog();
 });
 auth.onAuthStateChanged(async u => {
   unsubs.forEach(f => f()); unsubs = [];
@@ -17,6 +17,7 @@ auth.onAuthStateChanged(async u => {
   const s = await db.collection('staff').doc(u.uid).get();
   if (!s.exists || s.data().role !== 'admin' || s.data().active !== true) { await auth.signOut(); $('lerr').textContent = 'هذا الحساب ليس مسؤولاً'; return; }
   unsubs.push(db.collection('orders').onSnapshot(sn => { orders = sn.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0)); renderOrders(); renderCash(); renderCustomers(); }));
+  unsubs.push(db.collection('batches').onSnapshot(sn => { batches = sn.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.deliveryStart || 0) - (a.deliveryStart || 0)); renderBatches(); }));
   unsubs.push(db.collection('staff').where('role', '==', 'courier').onSnapshot(sn => { couriers = sn.docs.map(d => ({ uid: d.id, ...d.data() })); renderCouriers(); renderOrders(); }));
 });
 
@@ -55,6 +56,8 @@ async function cancelOrder(o) {
   if (o.trackingToken) b.update(db.collection('tracking').doc(o.trackingToken), { status: 'canceled', updatedAtMs: Date.now() });
   const st = {}; Object.entries(o.items || {}).forEach(([k, v]) => { if (PRODUCTS[k]) st[k] = inc(Number(v)); });
   b.update(db.collection('catalog').doc('stock'), { ...st, lastOrderId: 'cancel:' + o.id });
+  const pr = ['super', 'special', 'superspecial', 'jumbo'].reduce((a, k) => a + Number((o.items || {})[k] || 0), 0);
+  if (o.batchId && pr > 0) b.update(db.collection('batches').doc(o.batchId), { bookedPairs: inc(-pr) });
   b.commit().catch(e => { console.error('cancel failed', e.code); alert('تعذر الإلغاء'); });
 }
 function renderCustomers() {
@@ -112,4 +115,25 @@ $('csave').onclick = async () => {
   const pr = {}, st = {}; Object.keys(PRODUCTS).forEach(k => { pr[k] = parseInt($('p-' + k).value, 10) || 0; st[k] = parseInt($('s-' + k).value, 10) || 0; });
   const b = db.batch(); b.set(db.collection('catalog').doc('prices'), { ...pr, zones: window._zones }); b.set(db.collection('catalog').doc('stock'), { ...st, lastOrderId: 'admin' }, { merge: true });
   b.commit().then(() => alert('تم الحفظ')).catch(() => alert('تعذر الحفظ'));
+};
+
+// Batches: delivery rounds with a ceiling of pairs (plates). Orders book into them atomically from the store.
+const dms = v => (v ? new Date(v + 'T12:00:00').getTime() : null);
+function renderBatches() {
+  const box = $('blist'); if (!box) return; box.replaceChildren();
+  batches.forEach(b => {
+    const c = el('div', null, 'card'), fd = ms => (ms ? new Date(ms).toLocaleDateString('ar-EG') : '-');
+    c.append(el('b', b.name), el('div', 'محجوز ' + (b.bookedPairs || 0) + ' من ' + b.ceilingPairs + ' | التوصيل ' + fd(b.deliveryStart) + ' إلى ' + fd(b.deliveryEnd)));
+    const tags = el('div'); tags.append(el('span', b.isOpen ? 'مفتوحة' : 'مغلقة', 'tag'), el('span', b.isVisible ? 'ظاهرة للعملاء' : 'مخفية', 'tag'), el('span', b.isArchived ? 'مؤرشفة' : 'نشطة', 'tag')); c.append(tags);
+    const r = el('div', null, 'row'), mk = (txt, patch) => { const x = el('button', txt, 'gray'); x.onclick = () => db.collection('batches').doc(b.id).update(patch).catch(() => alert('تعذر التحديث')); r.append(x); };
+    mk(b.isOpen ? 'إغلاق الحجز' : 'فتح الحجز', { isOpen: !b.isOpen }); mk(b.isVisible ? 'إخفاء' : 'إظهار', { isVisible: !b.isVisible }); mk(b.isArchived ? 'إلغاء الأرشفة' : 'أرشفة', { isArchived: !b.isArchived });
+    c.append(r); box.append(c);
+  });
+  if (!box.children.length) box.append(el('div', 'لا توجد دفعات. أضف دفعة ليتمكن العملاء من حجز الأطباق.', 'card'));
+}
+$('badd').onclick = async () => {
+  $('berr').textContent = ''; const name = $('bname').value.trim(), ceil = parseInt($('bceil').value, 10);
+  if (!name || !(ceil > 0)) { $('berr').textContent = 'أدخل اسم الدفعة والحد الأقصى'; return; }
+  try { await db.collection('batches').add({ name, ceilingPairs: ceil, bookedPairs: 0, isOpen: true, isVisible: true, isArchived: false, deliveryStart: dms($('bstart').value), deliveryEnd: dms($('bend').value), lastOrderId: '' }); $('bname').value = $('bceil').value = ''; }
+  catch (e) { $('berr').textContent = 'تعذر الإضافة'; }
 };

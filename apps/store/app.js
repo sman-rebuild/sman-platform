@@ -1,7 +1,10 @@
 const $ = id => document.getElementById(id);
 const P = window.PRODUCTS, KEYS = Object.keys(P);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-let prices = null, stock = null, filter = 'all';
+let prices = null, stock = null, filter = 'all', batches = [];
+const pairsOf = items => ['super', 'special', 'superspecial', 'jumbo'].reduce((a, k) => a + (items[k] || 0), 0);
+const room = b => Math.max(0, Number(b.ceilingPairs) - Number(b.bookedPairs || 0));
+const fmtD = ms => ms ? new Date(ms).toLocaleDateString('ar-EG') : '';
 let cart = {}; try { cart = JSON.parse(localStorage.getItem('sman_cart') || '{}'); } catch (e) {}
 const save = () => localStorage.setItem('sman_cart', JSON.stringify(cart));
 const qty = k => cart[k] || 0;
@@ -37,7 +40,15 @@ function renderGrid() {
     g.append(c);
   });
 }
+function renderBatch() {
+  const need = pairsOf(cart), w = $('batch-wrap'), sel = $('batch'), keep = sel.value; sel.replaceChildren();
+  w.classList.toggle('hidden', !need);
+  batches.forEach(b => { const o = document.createElement('option'); o.value = b.id; const r = room(b); o.textContent = b.name + (b.deliveryStart ? ' | ' + fmtD(b.deliveryStart) + (b.deliveryEnd ? ' - ' + fmtD(b.deliveryEnd) : '') : '') + ' | متبقي ' + r; o.disabled = r < need; sel.append(o); });
+  if ([...sel.options].some(o => o.value === keep && !o.disabled)) sel.value = keep; else { const f = [...sel.options].find(o => !o.disabled); if (f) sel.value = f.value; }
+  $('batch-note').textContent = !need ? '' : !batches.length ? 'لا توجد دفعات متاحة حالياً للأطباق' : ![...sel.options].some(o => !o.disabled) ? 'لا توجد دفعة بها مكان كاف لهذا العدد' : '';
+}
 function renderCart() {
+  renderBatch();
   const t = totals(); $('cart-count').textContent = t.count; $('bar-total').textContent = t.sub;
   $('cart-bar').classList.toggle('translate-y-full', !t.count);
   $('sub').textContent = t.sub; $('fee').textContent = t.fee; $('tot').textContent = t.tot;
@@ -63,7 +74,8 @@ $('track-open').onclick = () => { const t = localStorage.getItem('sman_last_trac
   try {
     [prices, stock] = (await Promise.all([db.collection('catalog').doc('prices').get(), db.collection('catalog').doc('stock').get()])).map(d => d.data());
     if (!prices || !stock) throw new Error('missing');
-  } catch (e) { $('load-err').classList.remove('hidden'); return; }
+    batches = (await db.collection('batches').where('isOpen', '==', true).where('isVisible', '==', true).get()).docs.map(d => ({ id: d.id, ...d.data() })).filter(b => !b.isArchived).sort((a, b) => (a.deliveryStart || 0) - (b.deliveryStart || 0));
+  } catch (e) { console.error('load failed', e.code || e.message); $('load-err').classList.remove('hidden'); return; }
   Object.keys(prices.zones || {}).forEach(z => { const o = document.createElement('option'); o.value = o.textContent = z; $('zone').append(o); });
   $('size-table').innerHTML = KEYS.filter(k => P[k].cat !== 'eggs').map(k => `<div class="flex justify-between py-2 font-bold"><span>${esc(P[k].name)}</span><span class="text-slate-500">${esc(P[k].weight)}</span></div>`).join('');
   $('zone-list').innerHTML = Object.entries(prices.zones || {}).map(([z, f]) => `<span class="bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-xl px-3 py-1.5 text-xs font-black">${esc(z)} - ${Number(f)} ج</span>`).join('');
@@ -78,6 +90,8 @@ $('order').onclick = async () => {
   if (!Object.keys(items).length) return $('err').textContent = 'اختر منتجاً';
   if (Object.values(items).reduce((a, b) => a + b, 0) > 50) return $('err').textContent = 'الحد الأقصى 50 قطعة في الطلب الواحد';
   if (!$('name').value.trim() || $('phone').value.replace(/\D/g, '').length < 8 || !$('address').value.trim()) return $('err').textContent = 'أكمل الاسم والموبايل والعنوان';
+  const need = pairsOf(items), bid = $('batch').value;
+  if (need && (!bid || $('batch').selectedOptions[0].disabled)) return $('err').textContent = 'اختر دفعة بها مكان كاف';
   $('order').disabled = true;
   const sref = db.collection('catalog').doc('stock'), oref = db.collection('orders').doc(), tok = newToken();
   try {
@@ -87,10 +101,14 @@ $('order').onclick = async () => {
       const z = $('zone').value, sub = Object.keys(items).reduce((s, k) => s + items[k] * p[k], 0), fee = p.zones[z];
       const order = { name: $('name').value.trim(), phone: $('phone').value.trim(), address: $('address').value.trim(), items, subtotal: sub, deliveryFee: fee, total: sub + fee, status: 'new', createdAtMs: Date.now(), zone: z, trackingToken: tok };
       if ($('notes').value.trim()) order.notes = $('notes').value.trim();
+      let bref = null;
+      if (need) { bref = db.collection('batches').doc(bid); const b = (await tx.get(bref)).data(); if (!b || !b.isOpen || !b.isVisible || b.isArchived || Number(b.bookedPairs || 0) + need > Number(b.ceilingPairs)) throw new Error('FULL'); order.batchId = bid; order._b = Number(b.bookedPairs || 0) + need; }
+      const bookedNew = order._b; delete order._b;
       const next = {}; KEYS.forEach(k => next[k] = cur[k] - (items[k] || 0));
       tx.set(oref, order); tx.set(db.collection('tracking').doc(tok), { orderId: oref.id, status: 'new', updatedAtMs: Date.now() }); tx.update(sref, { ...next, lastOrderId: oref.id });
+      if (bref) tx.update(bref, { bookedPairs: bookedNew, lastOrderId: oref.id });
     });
     localStorage.setItem('sman_last_track', tok); cart = {}; save();
     location.href = 'track.html?t=' + tok;
-  } catch (e) { $('err').textContent = String(e.message).startsWith('OOS:') ? 'نفد: ' + e.message.slice(4) : 'تعذر إرسال الطلب، حاول مرة أخرى'; $('order').disabled = false; }
+  } catch (e) { $('err').textContent = String(e.message).startsWith('OOS:') ? 'نفد: ' + e.message.slice(4) : e.message === 'FULL' ? 'الدفعة المختارة امتلأت، اختر دفعة أخرى' : 'تعذر إرسال الطلب، حاول مرة أخرى'; $('order').disabled = false; }
 };

@@ -5,6 +5,7 @@ window.SMAN = {
   emulator: (location.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(location.hostname)) ? { host: location.hostname, firestore: 8181, auth: 9199 } : null,
   courierEmailDomain: 'courier.sman.invalid'
 };
+if (SMAN.emulator) SMAN.firebase = { ...SMAN.firebase, projectId: 'demo-sman-rebuild' }; // tests only: emulator project id
 SMAN.configured = !!SMAN.emulator || SMAN.firebase.apiKey !== 'demo-key';
 firebase.initializeApp(SMAN.firebase);
 window.db = firebase.firestore(); window.auth = firebase.auth();
