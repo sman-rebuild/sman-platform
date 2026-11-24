@@ -9,7 +9,7 @@ Takes about 10 minutes. No card is needed on the Spark plan. Do not enable Blaze
 5. Project settings > Your apps > add a Web app. Copy the `firebaseConfig` values.
 6. Paste them into `apps/shared/config.js` (replace the `firebase:` object). The red "not connected" banner disappears once `apiKey` is no longer `demo-key`.
 7. Firestore > Rules: paste the contents of `firestore.rules` and publish.
-8. Authentication > Users > Add user: the admin email and a strong password. Then in Firestore create `admins/<that user's UID>` as the rules file describes.
+8. Authentication > Users > Add user (admin email + strong password). Copy its UID. In Firestore (console, which bypasses rules) create document `staff/<UID>` with fields `role: "admin"`, `active: true`, `name: "..."`. This one document is the only manual bootstrap; couriers are then added from the CRM.
 9. Rebuild both APKs (`mobile/*`, `scripts/prepare-www.mjs`, then Gradle assembleDebug).
 10. Free limits (Spark): 1 GiB stored, 20K writes/day, 10 GiB/month egress. Over quota, writes stop; nothing is billed.
 
