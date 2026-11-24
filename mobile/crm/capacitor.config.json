@@ -1,0 +1,1 @@
+{ "appId": "com.sman.rebuild.crm", "appName": "سمان ههيا - الإدارة", "webDir": "www", "server": { "androidScheme": "https" }, "android": { "allowMixedContent": false } }

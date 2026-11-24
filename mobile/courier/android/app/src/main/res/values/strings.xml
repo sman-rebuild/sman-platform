@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">سمان ههيا - المندوب</string>
+    <string name="title_activity_main">سمان ههيا - المندوب</string>
+    <string name="package_name">com.sman.rebuild.courier</string>
+    <string name="custom_url_scheme">com.sman.rebuild.courier</string>
+</resources>
