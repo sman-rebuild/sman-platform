@@ -26,6 +26,8 @@ service cloud.firestore {
     }
 
     function q(o, k) { return o.items.get(k, 0); }
+    // one plate = one pair (جوز); eggs do not use batch capacity
+    function pairs(o) { return q(o,'super') + q(o,'special') + q(o,'superspecial') + q(o,'jumbo'); }
     function prices() { return get(/databases/$(database)/documents/catalog/prices).data; }
     function stockBefore() { return get(/databases/$(database)/documents/catalog/stock).data; }
     function stockDiffOk(o) {
@@ -44,7 +46,7 @@ service cloud.firestore {
     }
 
     function validNewOrder(o) {
-      return o.keys().hasOnly(['name','phone','address','items','subtotal','deliveryFee','total','status','createdAtMs','zone','notes','trackingToken'])
+      return o.keys().hasOnly(['name','phone','address','items','subtotal','deliveryFee','total','status','createdAtMs','zone','notes','trackingToken','batchId'])
         && o.keys().hasAll(['name','phone','address','items','subtotal','deliveryFee','total','status','createdAtMs','zone','trackingToken'])
         && o.status == 'new'
         && o.name is string && o.name.size() > 0 && o.name.size() < 120
@@ -62,9 +64,33 @@ service cloud.firestore {
         && o.subtotal == q(o,'super')*prices().super + q(o,'special')*prices().special + q(o,'superspecial')*prices().superspecial
                          + q(o,'eggs')*prices().eggs + q(o,'jumbo')*prices().jumbo
         && o.total == o.subtotal + o.deliveryFee
+        // quail plates must book into an open batch (booked in the same atomic write); eggs-only orders carry no batch
+        && ((pairs(o) == 0 && !('batchId' in o))
+            || (pairs(o) > 0 && o.batchId is string
+                && getAfter(/databases/$(database)/documents/batches/$(o.batchId)).data.lastOrderId == request.resource.id))
         && o.createdAtMs is int
         // stock must be decremented by exactly this order in the same batch
         && getAfter(/databases/$(database)/documents/catalog/stock).data.lastOrderId == request.resource.id;
+    }
+
+    // Batches (slaughter/delivery rounds): {name, isOpen, isVisible, isArchived, ceilingPairs, bookedPairs, deliveryStart, deliveryEnd, lastOrderId}
+    match /batches/{batchId} {
+      allow get: if true;
+      allow list: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || batchBookingMatchesOrder(batchId);
+    }
+    function batchBookingMatchesOrder(batchId) {
+      let id = request.resource.data.lastOrderId;
+      let ord = getAfter(/databases/$(database)/documents/orders/$(id)).data;
+      return id is string
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bookedPairs','lastOrderId'])
+        && !exists(/databases/$(database)/documents/orders/$(id))
+        && existsAfter(/databases/$(database)/documents/orders/$(id))
+        && ord.get('batchId','') == batchId
+        && resource.data.isOpen == true && resource.data.isVisible == true && resource.data.get('isArchived', false) == false
+        && request.resource.data.bookedPairs == resource.data.bookedPairs + pairs(ord)
+        && request.resource.data.bookedPairs <= resource.data.ceilingPairs;
     }
 
     match /orders/{orderId} {

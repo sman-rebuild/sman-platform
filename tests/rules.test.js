@@ -22,22 +22,33 @@ const can=async p=>{ try{ await p; return true; }catch(e){ return false; } };
   await adminWrite('orders/o1',{name:'a',phone:'01000000001',status:'dispatched',courierUid:c1,total:100,trackingToken:'T'.repeat(24)});
   await adminWrite('orders/o2',{name:'b',phone:'01000000002',status:'dispatched',courierUid:c2,total:100,trackingToken:'U'.repeat(24)});
   await adminWrite('tracking/'+'T'.repeat(24),{orderId:'o1',status:'dispatched',updatedAtMs:1});
+  await adminWrite('batches/b1',{name:'دفعة 1',isOpen:true,isVisible:true,isArchived:false,ceilingPairs:6,bookedPairs:0,lastOrderId:'seed'});
+  await adminWrite('batches/bclosed',{name:'مغلقة',isOpen:false,isVisible:true,isArchived:false,ceilingPairs:6,bookedPairs:0,lastOrderId:'seed'});
   const anon=await client('anon'), dA=await client('adm','admin@t.local'), d1=await client('c1','c1@t.local'), d2=await client('c2','c2@t.local'), dR=await client('rnd','rnd@t.local');
   const O=(db,id)=>F.doc(db,'orders',id), upd=(db,id,d)=>F.updateDoc(O(db,id),d);
   const ST=db=>F.doc(db,'catalog','stock'), TR=(db,t)=>F.doc(db,'tracking',t);
   let n=0;
   // place an order as a customer: order + tracking + stock decrement in one atomic batch
-  async function place(db,over={},stockOver={},items={super:2,eggs:1}){
+  async function place(db,over={},stockOver={},items={super:2,eggs:1},batchOver={},batchId='b1',noBatch=false){
     const id='n'+(++n), tok=('K'+n).padEnd(24,'x');
     const sub=(items.super||0)*100+(items.special||0)*120+(items.superspecial||0)*150+(items.eggs||0)*60+(items.jumbo||0)*90, fee=25;
-    const o={name:'عميل',phone:'01012345678',address:'شارع',items,subtotal:sub,deliveryFee:fee,total:sub+fee,status:'new',createdAtMs:1,zone:'cairo',trackingToken:tok,...over};
+    const pr=(items.super||0)+(items.special||0)+(items.superspecial||0)+(items.jumbo||0); const o={name:'عميل',phone:'01012345678',address:'شارع',items,...(pr>0&&!noBatch?{batchId}:{}),subtotal:sub,deliveryFee:fee,total:sub+fee,status:'new',createdAtMs:1,zone:'cairo',trackingToken:tok,...over};
     const cur={super:10,special:10,superspecial:10,eggs:2,jumbo:10};
     const st={...cur}; for(const k in items) st[k]=cur[k]-items[k];
-    const b=F.writeBatch(db); b.set(O(db,id),o); b.set(TR(db,tok),{orderId:id,status:'new',updatedAtMs:1}); b.update(ST(db),{...st,lastOrderId:id,...stockOver});
+    const b=F.writeBatch(db); b.set(O(db,id),o); b.set(TR(db,tok),{orderId:id,status:'new',updatedAtMs:1}); b.update(ST(db),{...st,lastOrderId:id,...stockOver}); if(pr>0&&!noBatch) b.update(F.doc(db,'batches',batchId),{bookedPairs:pr,lastOrderId:id,...batchOver});
     const r=await can(b.commit());
-    if(r){ await adminWrite('catalog/stock',{...cur,lastOrderId:'seed'}); } // reset stock for next case
+    if(r){ await adminWrite('catalog/stock',{...cur,lastOrderId:'seed'}); await adminWrite('batches/b1',{name:'دفعة 1',isOpen:true,isVisible:true,isArchived:false,ceilingPairs:6,bookedPairs:0,lastOrderId:'seed'}); } // reset stock for next case
     return r; }
   // --- customer: valid and adversarial
+  ok('batch: booking beyond ceiling rejected (7 pairs, ceiling 6)', !await place(anon,{},{},{super:7},{}));
+  ok('batch: order into closed batch rejected', !await place(anon,{},{},{super:1},{},'bclosed'));
+  ok('batch: booking fewer pairs than ordered rejected', !await place(anon,{},{},{super:2},{bookedPairs:1}));
+  ok('batch: booking more pairs than ordered rejected', !await place(anon,{},{},{super:2},{bookedPairs:5}));
+  ok('batch: quail order without batch booking rejected', !await place(anon,{},{},{super:1},{},'b1',true));
+  ok('batch: eggs-only order needs no batch', await place(anon,{},{},{eggs:1}));
+  ok('batch: customer cannot reopen/raise ceiling', !await can(F.updateDoc(F.doc(anon,'batches','b1'),{ceilingPairs:999,lastOrderId:'x'})));
+  ok('batch: customer cannot create a batch', !await can(F.setDoc(F.doc(anon,'batches','evil'),{name:'x',isOpen:true})));
+  ok('batch: customers can read batches', await can(F.getDoc(F.doc(anon,'batches','b1'))));
   ok('customer can place a valid order (order+tracking+stock atomic)', await place(anon));
   ok('price tampering: lower subtotal/total rejected', !await place(anon,{subtotal:10,total:35}));
   ok('price tampering: total lowered but subtotal right rejected', !await place(anon,{total:1}));
