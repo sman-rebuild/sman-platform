@@ -1,7 +1,7 @@
 // Backend settings. Replace `firebase` with the real project's web config when a backend is chosen.
 // The local emulator is used only when served over plain http from localhost (tests), never inside the app.
 window.SMAN = {
-  firebase: { apiKey: 'demo-key', authDomain: 'demo-sman-rebuild.firebaseapp.com', projectId: 'demo-sman-rebuild', appId: '1:0:web:0' },
+  firebase: { apiKey: 'AIzaSyCpL-d7lAjJHv8zZ_2tdnvD9rX0G8bZvgk', authDomain: 'sman-rebuild.firebaseapp.com', projectId: 'sman-rebuild', storageBucket: 'sman-rebuild.firebasestorage.app', messagingSenderId: '528512275101', appId: '1:528512275101:web:139d568ce0bf5842af7a74' },
   emulator: (location.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(location.hostname)) ? { host: location.hostname, firestore: 8181, auth: 9199 } : null,
   courierEmailDomain: 'courier.sman.invalid'
 };
