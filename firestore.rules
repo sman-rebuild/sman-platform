@@ -73,7 +73,16 @@ service cloud.firestore {
       allow get: if isAdmin() || (isCourier() && resource.data.get('courierUid','') == request.auth.uid);
       allow list: if isAdmin() || (isCourier() && resource.data.get('courierUid','') == request.auth.uid);
       allow delete: if false;
-      allow update: if isAdmin()
+      allow update: if (isAdmin()
+            // financial/identity fields are immutable even for admin; canceled is terminal and only reachable before delivery
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['items','subtotal','deliveryFee','total','trackingToken','createdAtMs','name','phone'])
+            && resource.data.status != 'canceled'
+            && (request.resource.data.status != 'canceled' || resource.data.status in ['new','dispatched','no_answer']))
+        // courier reports a delivery problem without changing status
+        || (isCourier() && resource.data.get('courierUid','') == request.auth.uid
+            && resource.data.status in ['dispatched','no_answer'] && request.resource.data.status == resource.data.status
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['problemNote','problemAtMs'])
+            && request.resource.data.problemNote is string && request.resource.data.problemNote.size() > 0 && request.resource.data.problemNote.size() <= 200)
         || (isCourier() && resource.data.get('courierUid','') == request.auth.uid
             && request.resource.data.diff(resource.data).affectedKeys()
                  .hasOnly(['status','completedAt','completedAtMs','handoffReported','handoffReportedAt'])

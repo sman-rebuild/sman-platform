@@ -1,3 +1,18 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* https://*.googleapis.com https://*.firebaseio.com; font-src 'self'"><link rel="stylesheet" href="../shared/vendor/cairo.css"><meta name="robots" content="noindex"><title>تتبع الطلب</title><style>*{box-sizing:border-box}body{margin:0;font-family:Cairo,sans-serif;background:#fefce8;color:#1c1917}header{background:#166534;color:#fff;padding:14px 16px;font-weight:800}main{padding:12px;max-width:560px;margin:auto}.card{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 3px #0001}input,select{width:100%;padding:10px;border:1px solid #d6d3d1;border-radius:10px;margin:4px 0;font:inherit}button{font:inherit;font-weight:800;border:0;border-radius:10px;padding:12px;width:100%;background:#166534;color:#fff;cursor:pointer}.row{display:flex;gap:8px;align-items:center;justify-content:space-between}.row input{width:80px}.err{color:#b91c1c}.hidden{display:none}</style></head><body>
-<header>تتبع طلبك</header><main><div class="card"><div>حالة الطلب: <b id="st">...</b></div></div></main><script src="../shared/vendor/firebase-app-compat.js"></script><script src="../shared/vendor/firebase-auth-compat.js"></script><script src="../shared/vendor/firebase-firestore-compat.js"></script><script src="../shared/config.js"></script>
-<script src="track.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* https://*.googleapis.com https://*.firebaseio.com; font-src 'self'">
+<title>تتبع طلبك | سمان ههيا</title><link rel="icon" href="img/logo.png">
+<link rel="stylesheet" href="../shared/vendor/cairo.css"><link rel="stylesheet" href="vendor/fa.css"><link rel="stylesheet" href="style.css">
+<script src="vendor/tailwind.js"></script></head>
+<body class="antialiased min-h-screen">
+<header class="luxury-hero-bg text-white px-4 py-5"><div class="max-w-md mx-auto flex items-center gap-3"><img src="img/logo.png" alt="" class="w-10 h-10 rounded-xl"><div><div class="font-black text-lg">تتبع طلبك</div><a href="index.html" class="text-xs font-bold text-amber-300">العودة للمتجر</a></div></div></header>
+<main class="max-w-md mx-auto p-4 space-y-3">
+ <div class="bg-white rounded-3xl p-5 border border-emerald-900/10 text-center space-y-3">
+  <div id="icon" class="w-16 h-16 mx-auto rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center text-3xl"><i class="fa-solid fa-receipt"></i></div>
+  <div class="text-xs font-bold text-slate-500">حالة الطلب</div><div id="st" class="text-xl font-black text-[#0f3426]">...</div>
+  <ol id="steps" class="flex justify-between text-[10px] font-black text-slate-400 pt-2"></ol>
+ </div>
+ <p class="text-[11px] font-bold text-slate-500 text-center">احتفظ برابط هذه الصفحة لمتابعة طلبك.</p>
+</main>
+<script src="../shared/vendor/firebase-app-compat.js"></script><script src="../shared/vendor/firebase-auth-compat.js"></script><script src="../shared/vendor/firebase-firestore-compat.js"></script>
+<script src="../shared/config.js"></script><script src="track.js"></script></body></html>

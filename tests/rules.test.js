@@ -91,7 +91,22 @@ const can=async p=>{ try{ await p; return true; }catch(e){ return false; } };
   ok('courier cannot delete', !await can(F.deleteDoc(O(d1,'o1'))));
   ok('courier cannot write own role', !await can(F.setDoc(F.doc(d1,'staff',c1),{role:'admin',active:true})));
   ok('signed-in user without staff doc cannot list orders', !await can(F.getDocs(F.collection(dR,'orders'))));
+  // --- courier problem report
+  await adminWrite('orders/p1',{name:'a',phone:'01000000009',status:'dispatched',courierUid:c1,total:100,trackingToken:'W'.repeat(24)});
+  ok('courier reports a problem (status unchanged)', await can(upd(d1,'p1',{problemNote:'العميل لا يرد',problemAtMs:1})));
+  ok('courier problem note cannot be empty', !await can(upd(d1,'p1',{problemNote:'',problemAtMs:2})));
+  ok('courier problem note cannot be huge', !await can(upd(d1,'p1',{problemNote:'x'.repeat(300),problemAtMs:2})));
+  ok('courier problem report cannot also change status', !await can(upd(d1,'p1',{problemNote:'x',problemAtMs:2,status:'completed'})));
+  ok('other courier cannot report a problem on it', !await can(upd(d2,'p1',{problemNote:'x',problemAtMs:2})));
   // --- admin
+  await adminWrite('orders/k1',{name:'a',phone:'01000000008',status:'dispatched',courierUid:c1,total:100,subtotal:75,deliveryFee:25,createdAtMs:1,trackingToken:'Y'.repeat(24),items:{super:1}});
+  ok('admin cannot change an order total', !await can(upd(dA,'k1',{total:1})));
+  ok('admin cannot change items', !await can(F.updateDoc(O(dA,'k1'),{items:{super:9}})));
+  ok('admin cancels a dispatched order', await can(upd(dA,'k1',{status:'canceled',canceledAtMs:1})));
+  ok('canceled is terminal (admin cannot revive)', !await can(upd(dA,'k1',{status:'dispatched'})));
+  ok('courier cannot update a canceled order', !await can(upd(d1,'k1',{status:'completed'})));
+  await adminWrite('orders/k2',{name:'a',phone:'01000000007',status:'completed',courierUid:c1,total:100,subtotal:75,deliveryFee:25,createdAtMs:1,trackingToken:'Z'.repeat(24),items:{super:1}});
+  ok('admin cannot cancel a completed order', !await can(upd(dA,'k2',{status:'canceled'})));
   ok('admin lists all orders', await can(F.getDocs(F.collection(dA,'orders'))));
   ok('admin confirms receipt (isSupplied + isReconciled)', await can(upd(dA,'o1',{isSupplied:true,isReconciled:true})));
   ok('admin dispatches order to courier', await can(upd(dA,'o2',{courierUid:c2,status:'dispatched'})));

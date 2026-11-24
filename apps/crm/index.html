@@ -18,8 +18,8 @@ button.gray{background:#64748b}.row{display:flex;gap:8px;align-items:center;flex
 <section id="login" class="card"><b>دخول المسؤول</b><input id="email" type="email" dir="ltr" placeholder="البريد"><input id="pass" type="password" dir="ltr" placeholder="كلمة السر">
  <button id="go">دخول</button><p id="lerr" class="err"></p></section>
 <section id="app" class="hidden">
- <div class="tabs" id="tabs"><button data-t="orders" class="on">الطلبات</button><button data-t="cash">تأكيد النقدية</button><button data-t="couriers">المناديب</button><button data-t="catalog">الأسعار والمخزون</button></div>
- <div id="orders"></div><div id="cash" class="hidden"></div>
+ <div class="tabs" id="tabs"><button data-t="orders" class="on">الطلبات</button><button data-t="cash">تأكيد النقدية</button><button data-t="customers">العملاء</button><button data-t="couriers">المناديب</button><button data-t="catalog">الأسعار والمخزون</button></div>
+ <div id="orders"></div><div id="cash" class="hidden"></div><div id="customers" class="hidden"><input id="csearch" placeholder="بحث بالاسم أو الموبايل" style="margin-bottom:8px"><div id="cuslist"></div></div>
  <div id="couriers" class="hidden"><div class="card"><b>إضافة مندوب</b><input id="cname" placeholder="الاسم"><input id="cphone" dir="ltr" placeholder="رقم الموبايل"><input id="cpass" dir="ltr" placeholder="كلمة سر (6 على الأقل)"><button id="cadd">إنشاء الحساب</button><p id="cerr" class="err"></p></div><div id="clist"></div></div>
  <div id="catalog" class="hidden"><div class="card"><b>الأسعار</b><div id="pbox"></div><b>المخزون</b><div id="sbox"></div><button id="csave">حفظ</button></div></div>
 </section></main>

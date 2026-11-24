@@ -53,6 +53,10 @@ function render() {
       if (o.status === 'dispatched') { const na = el('button', 'لم يرد', 'warn'); na.onclick = () => act(o.id, { status: 'no_answer' }); r.append(na); }
       else { const re = el('button', 'إعادة المحاولة', 'gray'); re.onclick = () => act(o.id, { status: 'dispatched' }); r.append(re); }
       c.append(r);
+      const pb = el('button', 'الإبلاغ عن مشكلة', 'gray'); pb.style.marginTop = '8px'; pb.style.width = '100%';
+      pb.onclick = () => { const t = (prompt('اكتب المشكلة (حتى 200 حرف)') || '').trim().slice(0, 200); if (t) db.collection('orders').doc(o.id).update({ problemNote: t, problemAtMs: Date.now() }).then(() => alert('تم إرسال البلاغ')).catch(() => alert('تعذر إرسال البلاغ')); };
+      c.append(pb);
+      if (o.problemNote) c.append(el('div', 'بلاغك: ' + o.problemNote, 'err'));
     }
     list.append(c);
   });
