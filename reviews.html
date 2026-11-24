@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>آراء عملائنا الموثّقة | سمان ههيا — أصل الطعم يبدأ من التربية</title>
+    <meta name="description" content="شاهد تجارب وآراء عملاء سمان ههيا الحقيقية الموثّقة في الشرقية عن الطعم الطازج والأوزان الدقيقة والنظافة.">
+    <meta name="theme-color" content="#0f3426">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" href="./logo.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./css/style.css?v=10">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            primary: '#0f3426',
+                            navy: '#0f3426',
+                            emerald: '#1b4332',
+                            accent: '#d97706',
+                            yellow: '#f59e0b',
+                            light: '#f0fdf4'
+                        }
+                    },
+                    fontFamily: { cairo: ['Cairo', 'sans-serif'] }
+                }
+            }
+        };
+    </script>
+    <style>
+        .trust-card {
+            background: #ffffff;
+            border: 1px solid rgba(15, 52, 38, 0.09);
+            box-shadow: 0 6px 20px -6px rgba(15, 52, 38, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .trust-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px -8px rgba(15, 52, 38, 0.14);
+        }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col min-h-screen bg-[#faf8f3] selection:bg-brand-navy selection:text-white">
+
+    <!-- إشعار Toast فوري -->
+    <div id="rev-toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-[150] pointer-events-none opacity-0 -translate-y-4 transition-all duration-300 w-max max-w-[92vw]">
+        <div class="bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-amber-400/30 flex items-center gap-2 text-xs font-black">
+            <i class="fa-solid fa-cart-plus text-amber-400 text-sm"></i>
+            <span id="rev-toast-text">تم تجهيز السلة بنجاح</span>
+        </div>
+    </div>
+
+    <!-- شريط التنقل الزجاجي الملكي المطابق للمتجر -->
+    <nav class="bg-[#0b261c]/95 backdrop-blur-md shadow-md sticky top-0 z-50 border-b border-white/10">
+        <div class="max-w-4xl mx-auto px-3.5 sm:px-5 h-14 flex items-center justify-between gap-2">
+            <a href="index.html" class="flex items-center gap-2.5 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-[#0b261c] flex items-center justify-center shadow-md shrink-0">
+                    <i class="fa-solid fa-kiwi-bird text-lg"></i>
+                </div>
+                <div class="min-w-0">
+                    <span class="font-black text-base sm:text-lg text-white leading-none block truncate">سمان <span class="text-amber-400">ههيا</span></span>
+                    <span class="text-[10px] font-bold text-emerald-300 flex items-center gap-1 mt-0.5">
+                        <i class="fa-solid fa-shield-check text-amber-400 text-[9px]"></i>
+                        <span>حائط ثقة عملائنا</span>
+                    </span>
+                </div>
+            </a>
+
+            <div class="flex items-center gap-1.5 shrink-0">
+                <a href="track.html" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-2.5 py-1.5 rounded-xl text-[11px] font-black transition-all flex items-center gap-1">
+                    <i class="fa-solid fa-star text-amber-400"></i>
+                    <span class="hidden sm:inline">قيّم طلبك</span>
+                    <span class="sm:hidden">تتبع</span>
+                </a>
+                <a href="index.html" class="bg-amber-400 hover:bg-amber-300 text-[#0b261c] px-3 py-1.5 rounded-xl text-xs font-black shadow-md flex items-center gap-1.5 transition-all active:scale-95">
+                    <i class="fa-solid fa-basket-shopping"></i>
+                    <span>اطلب الآن</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- هيدر حائط الثقة ومؤشر الرضا العام -->
+    <header class="luxury-hero-bg text-white pt-6 pb-8 px-4 relative overflow-hidden">
+        <div class="max-w-4xl mx-auto space-y-5">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="space-y-2 text-right">
+                    <div class="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/15 px-3 py-1 rounded-full text-[11px] font-black text-amber-300">
+                        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                        <span>تقييمات حقيقية 100% من طلبات تم استلامها فعلياً</span>
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-black text-white leading-snug">كلام عملائنا هو شهادة الجودة الحقيقية 🌿</h1>
+                    <p class="text-xs sm:text-sm font-semibold text-emerald-100/85 max-w-xl leading-relaxed">
+                        كل رأي هنا من عميل حقيقي في الشرقية جرّب سمان ههيا المذبوح طازج بالطلب — بدون إظهار أي أسماء أو أرقام حفاظاً تاماً على خصوصية عملائنا.
+                    </p>
+                </div>
+
+                <!-- بطاقة متوسط التقييم والتوزيع -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-3xl p-4 sm:min-w-[270px] space-y-2.5 shrink-0">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <div class="flex items-baseline gap-1">
+                                <span id="hero-avg-score" class="text-3xl sm:text-4xl font-black text-amber-300 leading-none">5.0</span>
+                                <span class="text-xs font-bold text-emerald-200">/ 5</span>
+                            </div>
+                            <div id="hero-avg-stars" class="flex items-center gap-0.5 text-amber-400 text-xs mt-1" dir="ltr">
+                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                            </div>
+                        </div>
+                        <div class="text-left">
+                            <span id="hero-total-count" class="block text-sm font-black text-white">-- تقييم موثّق</span>
+                            <span id="hero-recommend-pct" class="block text-[11px] font-black text-emerald-300 mt-0.5">100% يرشحوننا</span>
+                        </div>
+                    </div>
+                    <div id="hero-stars-bars" class="space-y-1 pt-2 border-t border-white/10 text-[10px] font-bold"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="flex-1 max-w-4xl w-full mx-auto px-3.5 sm:px-5 pt-5 pb-10 space-y-5">
+
+        <!-- شريط الفلترة الذكي (الكل / 5 نجوم / حسب المنطقة) -->
+        <section id="filters-bar" class="hidden bg-white rounded-2xl p-3 border border-emerald-900/10 shadow-sm space-y-2.5">
+            <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5" id="star-filter-pills">
+                <button type="button" data-rf="all" onclick="setPublicReviewFilter('all')" class="pub-rev-filter whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-black bg-brand-navy text-white shadow-sm transition-all">✨ كل الآراء</button>
+                <button type="button" data-rf="5" onclick="setPublicReviewFilter('5')" class="pub-rev-filter whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-black bg-slate-50 text-slate-600 border border-slate-200 hover:border-brand-navy/40 transition-all">👑 5 نجوم</button>
+                <button type="button" data-rf="with_text" onclick="setPublicReviewFilter('with_text')" class="pub-rev-filter whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-black bg-slate-50 text-slate-600 border border-slate-200 hover:border-brand-navy/40 transition-all">💬 بتعليق مفصّل</button>
+            </div>
+            <div id="zone-filter-pills" class="hidden flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-slate-100"></div>
+        </section>
+
+        <!-- مؤشر التحميل -->
+        <div id="reviews-loading" class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div class="bg-white rounded-3xl p-5 border border-slate-100 animate-pulse space-y-3">
+                <div class="flex items-center gap-3"><div class="w-11 h-11 rounded-2xl bg-slate-200"></div><div class="space-y-1.5 flex-1"><div class="h-3.5 bg-slate-200 rounded w-1/3"></div><div class="h-2.5 bg-slate-100 rounded w-1/4"></div></div></div>
+                <div class="h-14 bg-slate-100 rounded-2xl"></div>
+            </div>
+            <div class="bg-white rounded-3xl p-5 border border-slate-100 animate-pulse space-y-3">
+                <div class="flex items-center gap-3"><div class="w-11 h-11 rounded-2xl bg-slate-200"></div><div class="space-y-1.5 flex-1"><div class="h-3.5 bg-slate-200 rounded w-1/3"></div><div class="h-2.5 bg-slate-100 rounded w-1/4"></div></div></div>
+                <div class="h-14 bg-slate-100 rounded-2xl"></div>
+            </div>
+        </div>
+
+        <!-- شبكة بطاقات آراء العملاء -->
+        <section id="public-reviews-grid" class="hidden grid grid-cols-1 md:grid-cols-2 gap-3.5"></section>
+
+        <!-- حالة فارغة أنيقة (قبل نشر أول تقييم) -->
+        <section id="reviews-empty-state" class="hidden bg-white rounded-3xl p-8 text-center border border-emerald-900/10 shadow-sm space-y-3">
+            <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-brand-navy border border-emerald-200 flex items-center justify-center mx-auto text-3xl">
+                <i class="fa-solid fa-star text-amber-500"></i>
+            </div>
+            <h2 class="text-lg font-black text-brand-navy">كن أول من يشارك تجربته مع سمان ههيا! 🌿</h2>
+            <p class="text-xs sm:text-sm font-bold text-slate-500 max-w-md mx-auto leading-relaxed">
+                لو استلمت طلبك من سمان ههيا، تقدر تقيّم تجربتك في ثوانٍ من صفحة «تتبع طلبي» عشان رأيك يفيد باقي عملائنا في الشرقية.
+            </p>
+            <div class="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+                <a href="track.html" class="bg-brand-navy hover:opacity-95 text-white font-black px-5 py-2.5 rounded-xl text-xs shadow-md flex items-center gap-1.5">
+                    <i class="fa-solid fa-star text-amber-400"></i> قيّم طلبك الآن
+                </a>
+                <a href="index.html" class="bg-amber-400 hover:bg-amber-300 text-[#0b261c] font-black px-5 py-2.5 rounded-xl text-xs shadow-md flex items-center gap-1.5">
+                    <i class="fa-solid fa-basket-shopping"></i> تصفح منيو المتجر
+                </a>
+            </div>
+        </section>
+
+        <!-- بطاقة دعوة للطلب وتقييم التجربة -->
+        <section class="luxury-hero-bg text-white rounded-3xl p-5 sm:p-6 shadow-lg border border-amber-400/25 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-center sm:text-right space-y-1">
+                <h2 class="text-base sm:text-lg font-black text-white">جاهز تجرّب الطعم الطازج بنفسك؟ 🌿</h2>
+                <p class="text-xs font-bold text-emerald-200/85">احجز من الدفعة المتاحة الآن — ذبح بالطلب، صفر تجميد، وتوصيل لباب البيت.</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <a href="index.html" class="bg-amber-400 hover:bg-amber-300 text-[#0b261c] font-black px-5 py-3 rounded-xl text-xs sm:text-sm shadow-lg transition-all active:scale-95">
+                    اطلب من المتجر الآن
+                </a>
+                <a href="track.html" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-black px-4 py-3 rounded-xl text-xs sm:text-sm transition-all">
+                    قيّم طلبك
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- فوتر مطابق للهوية الملكية -->
+    <footer class="luxury-hero-bg text-emerald-100/80 py-6 px-4 border-t border-white/10 mt-auto">
+        <div class="max-w-4xl mx-auto flex flex-wrap justify-between items-center gap-3 text-xs">
+            <div>
+                <p class="font-black text-white text-sm flex items-center gap-1.5"><i class="fa-solid fa-kiwi-bird text-amber-400"></i> سمان ههيا</p>
+                <p class="text-[11px] text-emerald-200/75 mt-0.5">أصل الطعم يبدأ من التربية &copy; <span id="rev-footer-year">2026</span></p>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="bg-white/10 hover:bg-white/20 text-white font-black px-3.5 py-2 rounded-xl border border-white/10">المتجر</a>
+                <a href="track.html" class="bg-white/10 hover:bg-white/20 text-white font-black px-3.5 py-2 rounded-xl border border-white/10">تتبع طلبي</a>
+                <a href="./kitchen/" class="bg-white/10 hover:bg-white/20 text-white font-black px-3.5 py-2 rounded-xl border border-white/10">المطبخ</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="./js/config.js?v=8"></script>
+    <script>
+        (function () {
+            const U = window.SMAN_UTILS;
+            const esc = U.escapeHtml;
+
+            if (!firebase.apps.length) {
+                firebase.initializeApp(FIREBASE_CONFIG);
+            }
+            const db = firebase.firestore();
+            try { db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch (e) {}
+            if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
+            }
+
+            let allPublicReviews = [];
+            let liveProductsMap = {};
+            let livePricesMap = {};
+            let activeStarFilter = 'all';
+            let activeZoneFilter = 'all';
+            let toastTimer = null;
+
+            function showRevToast(text) {
+                const el = document.getElementById('rev-toast');
+                const txt = document.getElementById('rev-toast-text');
+                if (!el || !txt) return;
+                txt.textContent = text;
+                el.classList.remove('opacity-0', '-translate-y-4');
+                el.classList.add('opacity-100', 'translate-y-0');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => {
+                    el.classList.remove('opacity-100', 'translate-y-0');
+                    el.classList.add('opacity-0', '-translate-y-4');
+                }, 2200);
+            }
+
+            const REVIEWS_MIRROR_KEY = 'sman_public_reviews_cache_v1';
+
+            function getServerFirst(ref) {
+                if (!navigator.onLine) {
+                    return ref.get({ source: 'cache' }).catch(() => null);
+                }
+                return new Promise((resolve) => {
+                    let settled = false;
+                    const timer = setTimeout(() => {
+                        ref.get({ source: 'cache' }).then((cSnap) => {
+                            if (!settled && cSnap) { settled = true; resolve(cSnap); }
+                        }).catch(() => {});
+                    }, 2000);
+                    ref.get({ source: 'server' }).then((sSnap) => {
+                        clearTimeout(timer);
+                        if (!settled) { settled = true; resolve(sSnap); }
+                    }).catch(() => {
+                        clearTimeout(timer);
+                        ref.get({ source: 'cache' }).then((cSnap) => {
+                            if (!settled) { settled = true; resolve(cSnap); }
+                        }).catch(() => {
+                            if (!settled) { settled = true; resolve(null); }
+                        });
+                    });
+                });
+            }
+
+            async function loadPublicReviews() {
+                const loader = document.getElementById('reviews-loading');
+                const grid = document.getElementById('public-reviews-grid');
+                const emptyBox = document.getElementById('reviews-empty-state');
+                const filtersBar = document.getElementById('filters-bar');
+
+                // فتح فوري في 0ms من الكاش المحلي حتى قبل رد الإنترنت
+                let hadCachedReviews = false;
+                try {
+                    const cachedRaw = localStorage.getItem(REVIEWS_MIRROR_KEY);
+                    if (cachedRaw) {
+                        const cObj = JSON.parse(cachedRaw);
+                        if (cObj && Array.isArray(cObj.reviews) && cObj.reviews.length > 0) {
+                            allPublicReviews = cObj.reviews;
+                            if (cObj.products) liveProductsMap = cObj.products;
+                            if (cObj.prices) livePricesMap = cObj.prices;
+                            hadCachedReviews = true;
+                            updateHeroSummaryStats();
+                            renderZoneFilterPills();
+                            loader?.classList.add('hidden');
+                            emptyBox?.classList.add('hidden');
+                            filtersBar?.classList.remove('hidden');
+                            grid?.classList.remove('hidden');
+                            renderReviewsGrid();
+                        }
+                    }
+                } catch (e) {}
+
+                try {
+                    const [revSnap, setSnap, priceSnap] = await Promise.all([
+                        getServerFirst(db.collection('public_reviews').limit(100)),
+                        getServerFirst(db.collection('inventory').doc('settings')),
+                        getServerFirst(db.collection('inventory').doc('prices'))
+                    ]);
+
+                    if (setSnap && setSnap.exists) {
+                        const sData = setSnap.data() || {};
+                        if (sData.productsData) liveProductsMap = sData.productsData;
+                        if (sData.showReviewsWall === false) {
+                            loader?.classList.add('hidden');
+                            grid?.classList.add('hidden');
+                            filtersBar?.classList.add('hidden');
+                            emptyBox?.classList.remove('hidden');
+                            return;
+                        }
+                    }
+                    if (priceSnap && priceSnap.exists) {
+                        livePricesMap = priceSnap.data() || {};
+                    }
+
+                    const list = [];
+                    if (revSnap && !revSnap.empty) {
+                        revSnap.forEach((doc) => {
+                            const d = doc.data() || {};
+                            if (Number(d.rating) > 0) {
+                                list.push({ id: doc.id, ...d });
+                            }
+                        });
+                    }
+
+                    if (list.length === 0 && hadCachedReviews && !navigator.onLine) {
+                        return;
+                    }
+
+                    list.sort((a, b) => (Number(b.publishedAt || b.ratedAt) || 0) - (Number(a.publishedAt || a.ratedAt) || 0));
+                    allPublicReviews = list;
+
+                    if (list.length > 0) {
+                        try {
+                            localStorage.setItem(REVIEWS_MIRROR_KEY, JSON.stringify({
+                                ts: Date.now(),
+                                reviews: list,
+                                products: liveProductsMap,
+                                prices: livePricesMap
+                            }));
+                        } catch (e) {}
+                    }
+
+                    updateHeroSummaryStats();
+                    renderZoneFilterPills();
+
+                    loader?.classList.add('hidden');
+                    if (allPublicReviews.length === 0) {
+                        grid?.classList.add('hidden');
+                        filtersBar?.classList.add('hidden');
+                        emptyBox?.classList.remove('hidden');
+                    } else {
+                        emptyBox?.classList.add('hidden');
+                        filtersBar?.classList.remove('hidden');
+                        grid?.classList.remove('hidden');
+                        renderReviewsGrid();
+                    }
+                } catch (err) {
+                    console.error('Public reviews fetch error:', err);
+                    if (!hadCachedReviews) {
+                        loader?.classList.add('hidden');
+                        grid?.classList.add('hidden');
+                        emptyBox?.classList.remove('hidden');
+                    }
+                }
+            }
+
+            function updateHeroSummaryStats() {
+                const total = allPublicReviews.length;
+                const avgEl = document.getElementById('hero-avg-score');
+                const cntEl = document.getElementById('hero-total-count');
+                const recEl = document.getElementById('hero-recommend-pct');
+                const barsEl = document.getElementById('hero-stars-bars');
+
+                if (total === 0) {
+                    if (avgEl) avgEl.textContent = '5.0';
+                    if (cntEl) cntEl.textContent = 'تقييمات موثّقة';
+                    if (recEl) recEl.textContent = 'جودة طازجة بالطلب';
+                    if (barsEl) barsEl.innerHTML = '';
+                    return;
+                }
+
+                const sum = allPublicReviews.reduce((s, r) => s + (Number(r.rating) || 0), 0);
+                const avg = (sum / total).toFixed(1);
+                const positive = allPublicReviews.filter((r) => Number(r.rating) >= 4).length;
+                const recPct = Math.round((positive / total) * 100);
+
+                if (avgEl) avgEl.textContent = avg;
+                if (cntEl) cntEl.textContent = `${total} ${total === 1 ? 'تقييم موثّق' : 'تقييمات موثّقة'}`;
+                if (recEl) recEl.textContent = `${recPct}% عملاء راضون عن الجودة`;
+
+                const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+                allPublicReviews.forEach((r) => {
+                    const st = Math.max(1, Math.min(5, Math.round(Number(r.rating) || 5)));
+                    counts[st]++;
+                });
+
+                if (barsEl) {
+                    barsEl.innerHTML = [5, 4, 3].map((star) => {
+                        const pct = Math.round((counts[star] / total) * 100);
+                        return `
+                        <div class="flex items-center gap-2">
+                            <span class="w-10 text-right text-amber-300 shrink-0">${star} ⭐️</span>
+                            <div class="flex-1 h-1.5 bg-white/15 rounded-full overflow-hidden">
+                                <div class="h-full bg-amber-400 rounded-full" style="width: ${pct}%"></div>
+                            </div>
+                            <span class="w-7 text-left text-emerald-200/80 shrink-0">${pct}%</span>
+                        </div>`;
+                    }).join('');
+                }
+            }
+
+            function renderZoneFilterPills() {
+                const wrap = document.getElementById('zone-filter-pills');
+                if (!wrap) return;
+                const zones = Array.from(new Set(allPublicReviews.map((r) => String(r.zone || '').trim()).filter(Boolean)));
+                if (zones.length <= 1) {
+                    wrap.classList.add('hidden');
+                    return;
+                }
+                wrap.classList.remove('hidden');
+                const btnCls = (z) => activeZoneFilter === z
+                    ? 'bg-emerald-700 text-white border-emerald-700'
+                    : 'bg-[#faf8f3] text-slate-600 border-slate-200 hover:border-emerald-400';
+
+                wrap.innerHTML = `
+                    <button type="button" onclick="setPublicZoneFilter('all')" class="whitespace-nowrap px-2.5 py-1 rounded-xl text-[11px] font-black border transition-all ${btnCls('all')}">📍 كل المناطق</button>
+                    ${zones.map((z) => `<button type="button" onclick="setPublicZoneFilter('${U.escapeJsAttr(z)}')" class="whitespace-nowrap px-2.5 py-1 rounded-xl text-[11px] font-black border transition-all ${btnCls(z)}">📍 ${esc(z)}</button>`).join('')}
+                `;
+            }
+
+            window.setPublicReviewFilter = function (key) {
+                activeStarFilter = key || 'all';
+                document.querySelectorAll('.pub-rev-filter').forEach((btn) => {
+                    const isAct = btn.getAttribute('data-rf') === activeStarFilter;
+                    btn.className = `pub-rev-filter whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-black transition-all ${
+                        isAct ? 'bg-brand-navy text-white shadow-sm' : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-brand-navy/40'
+                    }`;
+                });
+                renderReviewsGrid();
+            };
+
+            window.setPublicZoneFilter = function (z) {
+                activeZoneFilter = z || 'all';
+                renderZoneFilterPills();
+                renderReviewsGrid();
+            };
+
+            window.orderSameItemsFromReview = function (reviewId) {
+                const rev = allPublicReviews.find((r) => r.id === reviewId);
+                if (!rev || !Array.isArray(rev.items) || rev.items.length === 0) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                const newCart = {};
+                rev.items.forEach((it) => {
+                    if (!it || !it.id) return;
+                    const p = liveProductsMap[it.id];
+                    if (!p || p.isHidden || p.isWeightBased) return;
+                    const qty = Math.max(1, Math.floor(Number(it.quantity) || 1));
+                    const price = Number(livePricesMap[it.id] !== undefined ? livePricesMap[it.id] : p.basePrice) || 0;
+                    newCart[it.id] = { quantity: qty, price, name: p.name || it.name };
+                });
+
+                if (Object.keys(newCart).length > 0) {
+                    try { localStorage.setItem('sman_cart_v2', JSON.stringify(newCart)); } catch (e) {}
+                    showRevToast('تمت إضافة نفس الأصناف لسلتك! جاري فتح المتجر 🛒');
+                    setTimeout(() => { window.location.href = 'index.html'; }, 550);
+                } else {
+                    window.location.href = 'index.html';
+                }
+            };
+
+            function renderReviewsGrid() {
+                const grid = document.getElementById('public-reviews-grid');
+                if (!grid) return;
+
+                const filtered = allPublicReviews.filter((r) => {
+                    if (activeStarFilter === '5' && Number(r.rating) < 5) return false;
+                    if (activeStarFilter === 'with_text' && !String(r.reviewText || '').trim()) return false;
+                    if (activeZoneFilter !== 'all' && String(r.zone || '').trim() !== activeZoneFilter) return false;
+                    return true;
+                });
+
+                if (filtered.length === 0) {
+                    grid.innerHTML = '<div class="col-span-full text-center py-10 bg-white rounded-3xl border border-dashed border-slate-200 text-xs font-bold text-slate-400">لا توجد آراء مطابقة لهذا الفلتر حالياً.</div>';
+                    return;
+                }
+
+                grid.innerHTML = filtered.map((r) => {
+                    const hasCustomAlias = r.allowCustomAlias === true && String(r.displayName || '').trim() !== '';
+                    const nameStr = hasCustomAlias ? String(r.displayName).trim() : 'عميل موثّق';
+                    const showZone = r.showZone !== false && String(r.zone || '').trim() !== '';
+                    const showDate = r.showDate === true && String(r.orderDate || '').trim() !== '';
+                    const showTags = r.showTags !== false;
+                    const showItems = r.showItems !== false;
+                    const rating = Math.max(1, Math.min(5, Number(r.rating) || 5));
+                    const starsHtml = Array.from({ length: 5 }, (_, i) =>
+                        `<i class="fa-${i < rating ? 'solid text-amber-400' : 'regular text-slate-200'} fa-star text-xs"></i>`
+                    ).join('');
+
+                    const tagsArr = showTags && Array.isArray(r.reviewTags) ? r.reviewTags.filter(Boolean) : [];
+                    const tagsHtml = tagsArr.length > 0
+                        ? `<div class="flex flex-wrap gap-1.5">${tagsArr.map((t) => `<span class="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-0.5 rounded-lg text-[10px] font-black">${esc(t)}</span>`).join('')}</div>`
+                        : '';
+
+                    const itemsArr = showItems && Array.isArray(r.items) ? r.items.filter((it) => it && it.name) : [];
+                    const canReorder = itemsArr.some((it) => it.id && liveProductsMap[it.id] && !liveProductsMap[it.id].isHidden && !liveProductsMap[it.id].isWeightBased);
+                    const itemsHtml = itemsArr.length > 0
+                        ? `<div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
+                               <span class="text-[10px] font-bold text-slate-400">جرّب:</span>
+                               ${itemsArr.slice(0, 4).map((it) => `<span class="bg-[#faf8f3] text-brand-navy border border-slate-200/80 px-2 py-0.5 rounded-lg text-[10px] font-black">${esc(it.quantity)}× ${esc(it.name)}</span>`).join('')}
+                           </div>`
+                        : '';
+
+                    const replyHtml = r.adminReply && String(r.adminReply).trim()
+                        ? `<div class="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-2.5 text-[11px] font-bold text-amber-950 leading-relaxed">
+                               <span class="text-[10px] font-black text-amber-700 block mb-0.5"><i class="fa-solid fa-kiwi-bird ml-1"></i> رد إدارة سمان ههيا:</span>
+                               ${esc(r.adminReply)}
+                           </div>`
+                        : '';
+
+                    const metaSubLine = [
+                        showZone ? `<i class="fa-solid fa-location-dot text-emerald-600 ml-0.5"></i> ${esc(r.zone)}` : '',
+                        showDate ? esc(r.orderDate) : ''
+                    ].filter(Boolean).join(' • ');
+
+                    return `
+                    <article class="trust-card rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-3 animate-slide">
+                        <div class="space-y-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#0f3426] to-[#1b4332] text-amber-300 font-black text-base flex items-center justify-center shrink-0 shadow-sm">
+                                        <i class="fa-solid fa-user-check"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <h3 class="font-black text-brand-navy text-sm truncate">${esc(nameStr)}</h3>
+                                            <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded-md text-[9px] font-black">✅ طلب موثّق</span>
+                                        </div>
+                                        ${metaSubLine ? `<p class="text-[10px] font-bold text-slate-400 mt-0.5">${metaSubLine}</p>` : ''}
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-0.5 bg-amber-50/70 border border-amber-200/70 px-2 py-1 rounded-xl shrink-0" dir="ltr">
+                                    ${starsHtml}
+                                </div>
+                            </div>
+
+                            ${tagsHtml}
+
+                            ${r.reviewText ? `<p class="text-xs sm:text-sm font-bold text-slate-700 leading-relaxed bg-[#faf8f3] p-3 rounded-2xl border border-slate-200/60">“${esc(r.reviewText)}”</p>` : ''}
+
+                            ${replyHtml}
+                            ${itemsHtml}
+                        </div>
+
+                        ${canReorder ? `
+                        <button type="button" onclick="orderSameItemsFromReview('${U.escapeJsAttr(r.id)}')" class="w-full bg-emerald-50 hover:bg-brand-navy text-brand-navy hover:text-white border border-emerald-200 hover:border-brand-navy font-black py-2 px-3 rounded-xl text-[11px] transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                            <i class="fa-solid fa-cart-plus text-amber-500"></i>
+                            <span>اطلب نفس الأصناف في السلة</span>
+                        </button>` : ''}
+                    </article>`;
+                }).join('');
+            }
+
+            document.getElementById('rev-footer-year').textContent = new Date().getFullYear();
+            window.addEventListener('DOMContentLoaded', loadPublicReviews);
+        })();
+    </script>
+    <script src="./js/floating-wa.js?v=1"></script>
+
+</body>
+</html>
